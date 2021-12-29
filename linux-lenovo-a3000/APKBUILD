@@ -1,0 +1,67 @@
+# Reference: <https://postmarketos.org/vendorkernel>
+# Kernel config based on: arch/arm/configs/(CHANGEME!)
+
+pkgname=linux-lenovo-a3000
+pkgver=3.4.5
+pkgrel=0
+pkgdesc="Lenovo Idea Tab A3000 kernel fork"
+arch="armv7"
+_carch="arm"
+_flavor="lenovo-a3000"
+url="https://kernel.org"
+license="GPL-2.0-only"
+options="!strip !check !tracedeps pmb:cross-native"
+makedepends="
+	xz
+	python2
+	grep
+	coreutils
+	bash
+	bc
+	bison
+	devicepkg-dev
+	flex
+	openssl-dev
+	perl
+	gcc4
+	mtk-mkimage
+"
+if [ "${CC:0:5}" != "gcc4-" ]; then
+	CC="gcc4-$CC"
+	HOSTCC="gcc4-gcc"
+	CROSS_COMPILE="gcc4-$CROSS_COMPILE"
+fi
+
+# Source
+_repository="android_kernel_lenovo_mt8389"
+_commit="63c648e6262ed09fcc0694123f6a27e262830850"
+_config="config-$_flavor.$arch"
+source="
+	$pkgname-$_commit.tar.gz::https://github.com/wujekbrezniew//$_repository/archive/$_commit.tar.gz
+	$_config
+"
+builddir="$srcdir/$_repository-$_commit"
+_outdir="out"
+
+prepare() {
+	export TARGET_KERNEL_PRODUCT=a3000_prc_3gfull
+	default_prepare
+	. downstreamkernel_prepare
+}
+
+build() {
+	unset LDFLAGS
+	make mrproper
+	make O="$_outdir" ARCH="$_carch" CC="${CC:-gcc}" \
+		KBUILD_BUILD_VERSION="$((pkgrel + 1 ))-postmarketOS"
+}
+
+package() {
+	downstreamkernel_package "$builddir" "$pkgdir" "$_carch" \
+		"$_flavor" "$_outdir"
+}
+
+sha512sums="
+15f378337aa62fb54d614569bc43805de5e216d6b2fcbdd2301454a57230ec3d7ac706305be721cbad2c8752a44ac84465293955d9f4e0f9a0e80303a865b26d  linux-lenovo-a3000-63c648e6262ed09fcc0694123f6a27e262830850.tar.gz
+5cff11a1a09548c201b992518ecb33f38eba1e5d420c76be2b348dbfca414126580f25cfad86064e8d9ad1f2508ce91bf1ecc64fd95a719a93d0a9d78831fb62  config-lenovo-a3000.armv7
+"
